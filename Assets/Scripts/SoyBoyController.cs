@@ -13,17 +13,45 @@ public class SoyBoyController : MonoBehaviour
     private Rigidbody2D rb;
     private Animator animator;
 
+    public bool isJumping;
+    public float jumpSpeed = 8f;
+    private float rayCastLengthCheck = 0.005f;
+    public float width;
+    public float height;
+
+    public float jumpDurationTreshold = 0.25f;
+    private float jumpDuration;
+
     void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
+
+        width = GetComponent<Collider2D>().bounds.extents.x + 0.1f;
+        height = GetComponent<Collider2D>().bounds.extents.y + 0.2f;
     }
 
     // Start is called before the first frame update
     void Start()
     {
         
+    }
+
+    public bool PlayerIsOnGround()
+    {
+        bool groundCheck1 = Physics2D.Raycast(new Vector2(transform.position.x, transform.position.y - height), -Vector2.up, rayCastLengthCheck);
+        bool groundCheck2 = Physics2D.Raycast(new Vector2(transform.position.x + (width - 0.2f), transform.position.y - height), -Vector2.up, rayCastLengthCheck);
+        bool groundCheck3 = Physics2D.Raycast(new Vector2(transform.position.x - (width - 0.2f), transform.position.y - height), -Vector2.up, rayCastLengthCheck);
+
+        if (groundCheck1 || groundCheck2 || groundCheck3)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     // Update is called once per frame
@@ -39,6 +67,29 @@ public class SoyBoyController : MonoBehaviour
         else if (input.x < 0f)
         {
             sr.flipX = true;
+        }
+
+        if (input.y >= 1f)
+        {
+            jumpDuration += Time.deltaTime;
+        }
+        else
+        {
+            isJumping = false;
+            jumpDuration = 0f;
+        }
+
+        if(PlayerIsOnGround() && isJumping == false)
+        {
+            if (input.y > 0f)
+            {
+                isJumping = true;
+            }
+        }
+
+        if (jumpDuration > jumpDurationTreshold)
+        {
+            input.y = 0f;
         }
     }
 
@@ -58,5 +109,10 @@ public class SoyBoyController : MonoBehaviour
 
         rb.AddForce(new Vector2(((input.x * speed) - rb.velocity.x) * acceleration, 0));
         rb.velocity = new Vector2(xVelocity, rb.velocity.y);
+
+        if (isJumping && jumpDuration < jumpDurationTreshold)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpSpeed);
+        }
     }
 }
